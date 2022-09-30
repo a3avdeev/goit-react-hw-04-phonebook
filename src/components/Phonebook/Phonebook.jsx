@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 
 import ContactAddForm from "../ContactAddForm/ContactAddForm"
@@ -6,66 +6,50 @@ import { ContactItemList } from "../ContactItemList/ContactItemList"
 import { Filter } from "../Filter/Filter"
 import { PhonebookStyled } from "./Phonebook.Styled"
 
-export default class Phonebook extends Component {
-    state = {
-        contacts: [],
-        filter: ''
-    }
+export default function Phonebook() {
+    const [contacts, setContacts] = useState(() => {
+        const value = JSON.parse(localStorage.getItem("contacts"));
+        return value ?? [];
+    });
+    const [filter, setFilter] = useState('');
 
-    componentDidMount() {
-        const contacts = JSON.parse(localStorage.getItem("contacts"));
-        if (contacts?.length) {
-            this.setState({
-                contacts,
-            })
-        }
-    }
+    useEffect(() => {
+        localStorage.setItem("contacts", JSON.stringify(contacts));
+    }, [contacts]);
 
-    componentDidUpdate(prevProps, prevState) {
-        const { contacts } = this.state;
-        if (contacts !== prevState.contacts) {
-            localStorage.setItem("contacts", JSON.stringify(contacts));
-        }
-    }
-
-    componentWillUnmount() {
-        if (this.state.contacts.length === 0) {
+    useEffect(() => {
+        return () => {
             localStorage.removeItem("contacts");
-            console.log('componentWillUnmount');
         }
+    }, [])
+
+    const handleChange = (event) => {
+        const { value } = event.currentTarget;
+        setFilter(value)
     }
 
-    handleChange = (event) => {
-        const { name, value } = event.currentTarget;
-        this.setState({[name]: value})
-    }
-
-    addContact = (contact) => {
-        if (this.inContacts(contact)) {
+    const addContact = (contact) => {
+        if (inContacts(contact)) {
             return alert(`${contact.name} is already in contacts`);
-        }
+        };
 
-        this.setState((prev) => {
+        setContacts((prev) => {
             const newContact = {
                 id: nanoid(),
                 ...contact
             }
-            return {
-                contacts: [...prev.contacts, newContact]
-            }
+            return [...prev, newContact]
         })
-    }
+    };
 
-    removeContact = (id) => {
-        this.setState((prev) => {
-            const newContact = prev.contacts.filter(item => item.id !== id);
-            return {contacts: newContact}
+    const removeContact = (id) => {
+        setContacts((prev) => {
+            const newContact = prev.filter(item => item.id !== id);
+            return newContact
         })
-    }
+    };
 
-    getFilteredContacts() {
-        const { contacts, filter } = this.state;
-
+    const getFilteredContacts = () => {
         if (!filter) {
             return contacts;
         }
@@ -76,25 +60,22 @@ export default class Phonebook extends Component {
             return normalName;
         })
         return filteredContacts;
+    };
+
+    const inContacts = ({name, number}) => {
+        return contacts.find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase() || item.number === number);
     }
 
-    inContacts({name, number}) {
-        return this.state.contacts.find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase() || item.number === number);
-    }
+    const filteredContacts = getFilteredContacts();
 
-    render() {
-        const { filter } = this.state;
-        const {addContact, removeContact, handleChange } = this;
-        const contacts = this.getFilteredContacts();
-        return <PhonebookStyled>
-            <h1>Phonebook</h1>
-            <ContactAddForm onSubmit={addContact}/>
+    return <PhonebookStyled>
+        <h1>Phonebook</h1>
+        <ContactAddForm onSubmit={addContact}/>
 
-            <h2>Contacts</h2>
-            <Filter value={filter} onChange={handleChange}/>
-            <ContactItemList contacts={contacts} onClick={removeContact}/>
-        </PhonebookStyled>
-    }
+        <h2>Contacts</h2>
+        <Filter value={filter} onChange={handleChange}/>
+        <ContactItemList contacts={filteredContacts} onClick={removeContact}/>
+    </PhonebookStyled>
 
 
 
