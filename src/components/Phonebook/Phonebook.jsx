@@ -18,9 +18,7 @@ export default function Phonebook() {
     }, [contacts]);
 
     useEffect(() => {
-        return () => {
-            localStorage.removeItem("contacts");
-        }
+        localStorage.removeItem("contacts");
     }, [])
 
     const handleChange = (event) => {
